@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<project name="dslab16-rmi-example" default="compile" basedir=".">
+
+	<property name="src.dir" value="src/main/java" />
+	<property name="src.resources.dir" value="src/main/resources" />
+	<property name="build.dir" value="build" />
+	<property name="zip.name" value="dslab16-rmi-example.zip" />
+
+	<path id="project.classpath">
+		<pathelement location="${build.dir}" />
+	</path>
+
+	<!-- create the zip file: -->
+	<target name="zip" depends="clean">
+		<delete file="${zip.name}" />
+		<zip destfile="${zip.name}">
+			<fileset dir="${basedir}">
+				<exclude name="target/**" />
+			</fileset>
+		</zip>
+	</target>
+
+	<target name="compile" description="Compile project.">
+		<mkdir dir="${build.dir}" />
+		<javac srcdir="${src.dir}" destdir="${build.dir}" classpathref="project.classpath" debug="true" deprecation="true" includeantruntime="false" />
+		<copy todir="${build.dir}">
+			<fileset dir="${src.resources.dir}">
+				<include name="*.properties" />
+			</fileset>
+		</copy>
+	</target>
+
+	<target name="run-server" depends="compile" description="Run Server.">
+		<java classname="server.Server" fork="true" classpathref="project.classpath" />
+	</target>
+
+	<target name="run-client1" depends="compile" description="Run 1st Client.">
+		<java classname="client.Client" fork="true" classpathref="project.classpath">
+			<arg value="client1" />
+		</java>
+	</target>
+
+	<target name="run-client2" depends="compile" description="Run 2nd Client.">
+		<java classname="client.Client" fork="true" classpathref="project.classpath">
+			<arg value="client2" />
+		</java>
+	</target>
+
+	<target name="clean" description="Clean build products.">
+		<delete dir="${build.dir}" />
+	</target>
+
+	<target name="rebuild" depends="clean, compile" description="Clean and build products." />
+</project>
