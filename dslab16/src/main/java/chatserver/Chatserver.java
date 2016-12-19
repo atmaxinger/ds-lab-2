@@ -127,7 +127,6 @@ public class Chatserver implements IChatserverCli, Runnable {
 				e1.printStackTrace();
 			}
 		}
-		
 	}
 
 	@Override

@@ -464,7 +464,7 @@ public class Client implements IClientCli, Runnable {
 
 		String plainTextMessage = String.format("!authenticate %s %s", username, new String(clientChallengeB64));
 
-		File fpubkey = new File("keys/client/chatserver.pub.pem");
+		File fpubkey = new File(config.getString("chatserver.key"));
 		PublicKey serverPublicKey = Keys.readPublicPEM(fpubkey);
 		PrivateKey clientPrivateKey = Keys.readPrivatePEM(new File(config.getString("keys.dir") + "/" + username + ".pem"));
 
@@ -481,8 +481,6 @@ public class Client implements IClientCli, Runnable {
 			// Wait for the server to respond
 			String serverResponse = waitForResponse(commandResponseQueue);
 
-			System.out.println("Got Response From Server: [" + serverResponse + "]");
-
 			String[] response = serverResponse.split(" ");
 			if(response.length != 4) {
 				throw new RuntimeException("WRONG COUNT OF !ok PARAMS");
@@ -497,7 +495,6 @@ public class Client implements IClientCli, Runnable {
 				throw new RuntimeException("RETURNED CLIENT CHALLENGE DOES NOT MATCH");
 			}
 
-
 			// Intialize the ciphers for all other messages
 			IvParameterSpec params = new IvParameterSpec(ivParameter);
 			SecretKey secretKey = new SecretKeySpec(secretKeyBytes, 0, secretKeyBytes.length, "AES");
@@ -508,7 +505,6 @@ public class Client implements IClientCli, Runnable {
 			inputCipher = Cipher.getInstance("AES/CTR/NoPadding");
 			inputCipher.init(Cipher.DECRYPT_MODE, secretKey,params);
 
-			System.out.println("Sending the server the challenge");
 			write(Base64.encode(serverChallenge));
 		} catch (NoSuchAlgorithmException e) {
 			e.printStackTrace();

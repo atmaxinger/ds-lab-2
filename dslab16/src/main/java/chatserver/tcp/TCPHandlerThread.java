@@ -95,8 +95,6 @@ public class TCPHandlerThread implements Runnable{
 //					}
 
 					if (request.startsWith("!authenticate")) {
-						System.out.println("GOT CLIENT MESSAGE AUTHENTICATE: " + request);
-
 						_username = parts[1];
 						String clientChallengeB64 = parts[2];
 						byte[] clientChallenge = Base64.decode(clientChallengeB64);
@@ -140,8 +138,6 @@ public class TCPHandlerThread implements Runnable{
 							throw new RuntimeException("CLIENT DIDNT REPLY RIGHT SERVER CHALLENGE");
 						}
 						else {
-							System.out.println("Server replied with correct server challenge");
-
 							boolean alreadyLoggedIn = false;
 
 							user = commandHandler.getUser(_username);
