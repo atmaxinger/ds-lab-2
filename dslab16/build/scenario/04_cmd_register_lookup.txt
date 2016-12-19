@@ -1,0 +1,73 @@
+*   Chatserver  chatserver
+*   Client      alice.vienna.at
+*   Client      tobi.eu
+*   Client      bill.de
+
+alice.vienna.at:    !login alice.vienna.at 12345
+>                   verify("Successfully logged in.")
+
+tobi.eu:            !lookup tobi.eu
+>                   verify("Not logged in.")
+
+tobi.eu:            !register localhost:2222
+>                   verify("Not logged in.")
+
+bill.de:            !login bill.de 23456
+>                   verify("Successfully logged in.")
+
+tobi.eu:            !login tobi.eu test
+>                   verify("Successfully logged in.")
+
+bill.de:   			!lookup tobi.eu
+>                   verify("Wrong username or user not registered.")
+
+alice.vienna.at:    !lookup tobi.eu
+>                   verify("Wrong username or user not registered.")
+
+alice.vienna.at:    !lookup asdfasdfasd
+>                   verify("Wrong username or user not registered.")
+
+tobi.eu:            !register localhost:7777
+>                   verify("Successfully registered address for tobi.eu.")
+
+bill.de:            !lookup tobi.eu
+>                   verify("localhost:7777")
+
+tobi.eu:            !lookup tobi.eu
+>                   verify("localhost:7777")
+
+alice.vienna.at:    !lookup tobi.eu
+>                   verify("localhost:7777")
+
+bill.de:            !register localhost:8888
+>                   verify("Successfully registered address for bill.de.")
+
+tobi.eu:            !lookup bill.de
+>                   verify("localhost:8888")
+
+alice.vienna.at:    !lookup bill.de
+>                   verify("localhost:8888")
+
+bill.de:		    !lookup bill.de
+>                   verify("localhost:8888")
+
+bill.de:            !logout
+>                   verify("Successfully logged out.")
+
+bill.de:            !lookup tobi.eu
+>                   verify("Not logged in.")
+
+tobi.eu:            !lookup bill.de
+>                   verify("Wrong username or user not registered.")
+
+tobi.eu:            !exit
+
+alice.vienna.at:    !lookup bill.de
+>                   verify("Wrong username or user not registered.")
+
+alice.vienna.at:    !lookup tobi.eu
+>                   verify("Wrong username or user not registered.")
+
+chatserver:         !exit
+alice.vienna.at:    !exit
+bill.de:            !exit

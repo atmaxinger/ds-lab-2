@@ -1,0 +1,27 @@
+*	Client		alice.vienna.at
+
+alice.vienna.at:	!login alice.vienna.at 12345
+>					verify("Could not establish connection.")
+
+alice.vienna.at:	!lookup alice.vienna.at
+>					verify("Not logged in.")
+
+alice.vienna.at:	!register asdf:576
+>					verify("Not logged in.")
+
+alice.vienna.at:	!login alice.vienna.at 12345
+>					verify("Could not establish connection.")
+
+alice.vienna.at:	!list
+>					verify("")
+
+alice.vienna.at:	!msg asdf new message
+>					verify("Not logged in.")
+
+alice.vienna.at:	!logout
+>					verify("Not logged in.")
+
+alice.vienna.at:	!send asdf new message
+>					verify("Not logged in.")
+
+alice.vienna.at:	!exit

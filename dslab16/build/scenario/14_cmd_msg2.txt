@@ -1,0 +1,78 @@
+*   Chatserver  chatserver
+*   Client      alice.vienna.at
+*   Client      tobi.eu
+*   Client      bill.de
+
+tobi.eu:            !msg user msg
+>                   verify("Not logged in.")
+
+alice.vienna.at:    !login alice.vienna.at 12345
+>                   verify("Successfully logged in.")
+
+tobi.eu:            !login tobi.eu test
+>                   verify("Successfully logged in.")
+
+bill.de:            !login bill.de 23456
+>                   verify("Successfully logged in.")
+
+tobi.eu:            !msg xxx hi whats up
+>                   verify("Wrong username or user not reachable.")
+
+tobi.eu:            !msg bill.de hi bill what's up!
+>                   verify("Wrong username or user not reachable.")
+
+bill.de:            !register 127.0.0.1:7777
+>                   verify("Successfully registered address for bill.de.")
+
+alice.vienna.at:    !lookup bill.de
+>                   verify("127.0.0.1:7777")
+
+tobi.eu:            !msg bill.de hallo welt
+>                   verify("localhost:7777", T(test.util.Flag).NOT)
+
+alice.vienna.at:    !msg bill.de Servus ich heisse alice and who are you?
+>                   verify("bill.de replied with !ack.")
+
+alice.vienna.at:    !lastMsg
+>                   verify("Servus ich heisse alice and who are you?", T(test.util.Flag).NOT)
+
+bill.de:   			!lastMsg
+>                   verify("no message received!")
+
+tobi.eu:            !msg bill.de hallo bill what's up!
+>                   verify("bill.de replied with !ack.")
+
+tobi.eu:            !register localhost:8888
+>                   verify("Successfully registered address for tobi.eu.")
+
+alice.vienna.at:    !register localhost:9999
+>                   verify("Successfully registered address for alice.vienna.at.")
+
+tobi.eu:            !msg alice.vienna.at my name is tobi!
+>                   verify("alice.vienna.at replied with !ack.")
+
+alice.vienna.at:    !msg tobi.eu my name is alice.vienna.at!
+>                   verify("tobi.eu replied with !ack.")
+
+alice.vienna.at:    !msg alice.vienna.at self msg?
+>                   verify("alice.vienna.at replied with !ack.")
+
+bill.de:            !logout
+>                   verify("successfully logged out.")
+
+tobi.eu:            !msg bill.de hallo bill what's up!
+>                   verify("wrong username or user not reachable.")
+
+alice.vienna.at:    !msg bill.de hi again its alice
+>                   verify("wrong username or user not reachable.")
+
+bill.de:            !msg tobi.eu hi tobi
+>                   verify("not logged in.")
+
+chatserver:         !users
+>                   verify(".*alice.*online.*asdf.*offline.*bill.*offline.*tobi.*online.*", T(test.util.Flag).REGEX)
+
+chatserver:         !exit
+alice.vienna.at:    !exit
+tobi.eu:            !exit
+bill.de:            !exit

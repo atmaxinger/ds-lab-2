@@ -1,0 +1,71 @@
+*   Chatserver  chatserver
+*   Client      alice.vienna.at
+*   Client      tobi.eu
+*   Client      bill.de
+
+alice.vienna.at:    !login alice.vienna.at 12345
+>                   verify("Successfully logged in.")
+
+tobi.eu:            !list
+>                   verify(".*Online users:.*alice.vienna.at.*", T(test.util.Flag).REGEX)
+
+tobi.eu:            !login tobi.eu test
+>                   verify("Successfully logged in.")
+
+bill.de:            !login bill.de 23456
+>                   verify("Successfully logged in.")
+
+chatserver:         !users
+>                   verify(".*alice.*online.*asdf.*offline.*bill.*online.*tobi.*online.*", T(test.util.Flag).REGEX)
+
+alice.vienna.at:    !register localhost:2222
+>                   verify("Successfully registered address for alice.vienna.at.")
+
+tobi.eu:            !lookup alice.vienna.at
+>                   verify("localhost:2222")
+
+tobi.eu:            !msg alice.vienna.at hi bill!
+>                   verify("alice.vienna.at replied with !ack.")
+
+tobi.eu:    		!send public message
+
+alice.vienna.at     !lastMsg
+>                   verify("tobi.eu: public message")
+
+tobi.eu:		    !lastMsg
+>                   verify("No message received!")
+
+bill.de:            !lastMsg
+>                   verify("tobi.eu: public message")
+
+alice.vienna.at:    !list
+>                   verify(".*users:.*alice.*bill.*tobi.*", T(test.util.Flag).REGEX)
+
+tobi.eu:            !logout
+>                   verify("Successfully logged out.")
+
+tobi.eu:            !exit
+
+chatserver:         !users
+>                   verify(".*alice.*online.*asdf.*offline.*bill.*online.*tobi.*offline.*", T(test.util.Flag).REGEX)
+
+alice.vienna.at:    !list
+>                   verify(".*users:.*alice.*bill.*", T(test.util.Flag).REGEX)
+
+bill.de:            !list
+>                   verify("tobi.eu", T(test.util.Flag).NOT)
+
+bill.de:            !exit
+
+chatserver:         !users
+>                   verify(".*alice.*online.*asdf.*offline.*bill.*offline.*tobi.*offline.*", T(test.util.Flag).REGEX)
+
+alice.vienna.at:    !list
+>                   verify(".*users:.*alice.*", T(test.util.Flag).REGEX)
+
+alice.vienna.at:    !list
+>                   verify("bill.de", T(test.util.Flag).NOT)
+
+
+alice.vienna.at:    !exit
+chatserver:         !exit

@@ -1,0 +1,36 @@
+*	Chatserver	chatserver
+*	Client		tobi.eu
+
+tobi.eu:			!login tobi.eu test
+>					verify("Successfully logged in.")
+
+tobi.eu:			!lookup tobi.eu
+>                   verify("Wrong username or user not registered.")
+
+chatserver: 		!exit
+
+tobi.eu:			!lookup tobi.eu
+>					verify("not logged in.")
+
+tobi.eu:			!login tobi.eu 12345
+>					verify("Could not establish connection.")
+
+tobi.eu:			!send whats up
+>					verify("Not logged in.")
+
+tobi.eu:			!lookup allice.vienna.at
+>					verify("Not logged in.")
+
+tobi.eu:			!register localhost:2232
+>					verify("Not logged in.")
+
+tobi.eu:			!lastMsg
+>					verify("Not logged in.")
+
+tobi.eu:			!msg bill.de whats up?!
+>					verify("Not logged in.")
+
+tobi.eu:			!list
+>					verify("")
+
+tobi.eu:			!exit

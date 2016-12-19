@@ -1,0 +1,71 @@
+*	Chatserver	chatserver
+*	Client		alice.vienna.at
+*	Client		tobi.eu
+
+alice.vienna.at:	!login alice.vienna.at 12345
+>					verify("Successfully logged in.")
+
+tobi.eu:			!login tobi.eu test
+>					verify("Successfully logged in.")
+
+alice.vienna.at:	!send Whats's up iam alice
+
+alice.vienna.at:	!lastMsg
+>                   verify("no message received!")
+
+tobi.eu:			!send Gruess dich Alice
+
+alice.vienna.at:	!lastMsg
+>					verify("tobi.eu: Gruess dich Alice")
+
+tobi.eu:			!lastMsg
+>					verify("alice.vienna.at: Whats's up iam alice")
+
+tobi.eu:			!register localhost:3333
+>					verify("Successfully registered address for tobi.eu.")
+
+alice.vienna.at:	!register 127.0.0.1:2222
+>					verify("Successfully registered address for alice.vienna.at.")
+
+alice.vienna.at:	!send Whats's up iam alice
+
+alice.vienna.at:	!lastMsg
+>					verify("tobi.eu: Gruess dich Alice")
+
+tobi.eu:			!send Gruess dich Alice
+
+alice.vienna.at:	!lastMsg
+>					verify("tobi.eu: Gruess dich Alice")
+
+tobi.eu:			!lastMsg
+>					verify("alice.vienna.at: Whats's up iam alice")
+
+alice.vienna.at:	!lookup tobi.eu
+>					verify("localhost:3333")
+
+alice.vienna.at:	!lookup tobiasdf.de
+>					verify("Wrong username or user not registered.")
+
+alice.vienna.at:	!msg tobi.eu servus tobi it's me
+>					verify("tobi.eu replied with !ack.")
+
+tobi.eu:			!msg alice.vienna.at hallo alice my name is tobi
+>					verify("alice.vienna.at replied with !ack.")
+
+alice.vienna.at:	!send Whats's up iam alice
+
+tobi.eu:			!msg alice.vienna.at hallo alice my name is tobi
+>					verify("alice.vienna.at replied with !ack.")
+
+
+tobi.eu:			!send Gruess dich Alice
+
+alice.vienna.at:	!lastMsg
+>					verify("tobi.eu: Gruess dich Alice")
+
+tobi.eu:			!lastMsg
+>					verify("alice.vienna.at: Whats's up iam alice")
+
+chatserver: 		!exit
+alice.vienna.at:	!exit
+tobi.eu:			!exit
