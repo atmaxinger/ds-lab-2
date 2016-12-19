@@ -1,11 +1,14 @@
 package chatserver;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.net.DatagramSocket;
 import java.net.ServerSocket;
 import java.net.SocketException;
+import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -18,6 +21,9 @@ import cli.Command;
 import cli.Shell;
 import entity.User;
 import util.Config;
+import util.Keys;
+
+import javax.crypto.Cipher;
 
 public class Chatserver implements IChatserverCli, Runnable {
 
@@ -31,7 +37,25 @@ public class Chatserver implements IChatserverCli, Runnable {
 	private Thread tcpListenerThread;
 	private Thread shellThread;
 	private List<User> userList;
-	
+
+	private PrivateKey serverPrivateKey;
+
+	public PrivateKey getServerPrivateKey() {
+		return serverPrivateKey;
+	}
+
+	public PublicKey getPublicKeyForClient(String name) {
+		try {
+			PublicKey pk = Keys.readPublicPEM(new File(config.getString("keys.dir")+"/"+name + ".pub.pem"));
+
+			return pk;
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+		return null;
+	}
+
 	/**
 	 * @param componentName
 	 *            the name of the component - represented in the prompt
@@ -49,7 +73,13 @@ public class Chatserver implements IChatserverCli, Runnable {
 		this.userRequestStream = userRequestStream;
 		this.userResponseStream = userResponseStream;
 
-		
+
+		try {
+			serverPrivateKey = Keys.readPrivatePEM(new File(config.getString("key")));
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
 		createUserList();
 		
 		shell = new Shell(componentName, userRequestStream, userResponseStream);

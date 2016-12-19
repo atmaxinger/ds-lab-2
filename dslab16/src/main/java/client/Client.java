@@ -1,11 +1,6 @@
 package client;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.PrintStream;
-import java.io.PrintWriter;
+import java.io.*;
 import java.net.ConnectException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -13,6 +8,8 @@ import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
+import java.security.*;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -23,6 +20,13 @@ import client.tcp.PrivateTcpWriterThread;
 import client.tcp.PublicTcpListenerThread;
 import client.udp.PublicUdpListenerThread;
 import util.Config;
+import util.Keys;
+
+import javax.crypto.*;
+import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
+
+import org.bouncycastle.util.encoders.Base64;
 
 public class Client implements IClientCli, Runnable {
 
@@ -34,7 +38,7 @@ public class Client implements IClientCli, Runnable {
 	private InputStream userRequestStream;
 	private PrintStream userResponseStream;
 	private BufferedReader serverReader;
-	private PrintWriter serverWriter;
+	private PrintWriter unencryptedServerWriter;
 	private ServerSocket privateTcpServerSocket;
 	private PrivateTcpWriterThread privateTcpWriter;
 	private List<String> publicMessageQueue;
@@ -50,7 +54,45 @@ public class Client implements IClientCli, Runnable {
 	private final String SUCESSFULLY_LOGGED_IN = "Successfully logged in.";
 	private final String ALREADY_LOGGED_IN = "Already logged in.";
 	private final String COULD_NOT_OPEN_SOCKET = "Could not open socket!";
-	
+
+	private Cipher inputCipher;
+	private Cipher outputCipher;
+
+
+	public String decodeMessage(String message) {
+		byte[] encrypted = Base64.decode(message);
+		String plainText = null;
+
+		try {
+			plainText = new String(inputCipher.doFinal(encrypted));
+			return plainText;
+
+		} catch (IllegalBlockSizeException e) {
+			e.printStackTrace();
+		} catch (BadPaddingException e) {
+			e.printStackTrace();
+		}
+
+		return null;
+	}
+
+	public void write(String msg) {
+		write(msg.getBytes());
+	}
+	public void write(byte[] msg) {
+		try {
+			byte[] encryptedMessage = outputCipher.doFinal(msg);
+			byte[] base64Message = Base64.encode(encryptedMessage);
+
+			unencryptedServerWriter.println(new String(base64Message));
+		} catch (IllegalBlockSizeException e) {
+			e.printStackTrace();
+		} catch (BadPaddingException e) {
+			e.printStackTrace();
+		}
+
+	}
+
 
 	/**
 	 * @param componentName
@@ -85,32 +127,34 @@ public class Client implements IClientCli, Runnable {
 	@Override
 	@Command
 	public String login(String username, String password) throws IOException {
-		
-		/* check if user is already logged in and if so do not send login command to server (save resources) */
-		if(isLoggedIn())
-		{
-			return ALREADY_LOGGED_IN;
-		}
-		
-		createTcpServerSocket();
-		
-		// if createTcpServerSocket was not successful
-		if(tcpSocket == null)
-		{
-			return null;
-		}
-		
-		// write login command to server	
-		serverWriter.format("!login %s %s%n",username,password);
-		
-		String response = waitForResponse(commandResponseQueue);
-		
-		if(response == null || !response.equals(SUCESSFULLY_LOGGED_IN))
-		{
-			tcpSocket.close();
-		}
-		
-		return response;
+//
+//		/* check if user is already logged in and if so do not send login command to server (save resources) */
+//		if(isLoggedIn())
+//		{
+//			return ALREADY_LOGGED_IN;
+//		}
+//
+//		createTcpServerSocket();
+//
+//		// if createTcpServerSocket was not successful
+//		if(tcpSocket == null)
+//		{
+//			return null;
+//		}
+//
+//		// write login command to server
+//		write(String.format("!login %s %s%n",username,password));
+//
+//		String response = waitForResponse(commandResponseQueue);
+//
+//		if(response == null || !response.equals(SUCESSFULLY_LOGGED_IN))
+//		{
+//			tcpSocket.close();
+//		}
+//
+//		return response;
+
+		return null;
 	}
 
 	@Override
@@ -123,7 +167,7 @@ public class Client implements IClientCli, Runnable {
 		}
 		
 		// write login command to server
-		serverWriter.println("!logout");
+		write("!logout");
 		
 		String response  = waitForResponse(commandResponseQueue);
 		
@@ -141,7 +185,7 @@ public class Client implements IClientCli, Runnable {
 			return NOT_LOGGED_IN;
 		}
 		
-		serverWriter.format("!send %s%n", message);
+		write(String.format("!send %s%n", message));
 		
 		return null;
 	}
@@ -211,7 +255,7 @@ public class Client implements IClientCli, Runnable {
 		}
 		
 		// write lookup command to server
-		serverWriter.println("!lookup "+ username);
+		write("!lookup "+ username);
 		
 		return waitForResponse(commandResponseQueue);
 	}
@@ -262,7 +306,7 @@ public class Client implements IClientCli, Runnable {
 			return COULD_NOT_OPEN_SOCKET;
 		}
 		
-		serverWriter.format("!register %s%n",privateAddress);
+		write(String.format("!register %s%n",privateAddress));
 		
 		String response = waitForResponse(commandResponseQueue);
 	
@@ -338,10 +382,10 @@ public class Client implements IClientCli, Runnable {
 			serverReader = new BufferedReader(new InputStreamReader(tcpSocket.getInputStream()));
 			
 			// create a writer to send messages to the server
-			serverWriter = new PrintWriter(tcpSocket.getOutputStream(), true);
+			unencryptedServerWriter = new PrintWriter(tcpSocket.getOutputStream(), true);
 			
 			/* start thread for listening to messages from the server */
-			PublicTcpListenerThread publicListener = new PublicTcpListenerThread(tcpSocket, serverReader, publicMessageQueue, commandResponseQueue, shell);
+			PublicTcpListenerThread publicListener = new PublicTcpListenerThread(tcpSocket, serverReader, publicMessageQueue, commandResponseQueue, shell, this);
 			Thread publicListenerThread = new Thread(publicListener);
 			publicListenerThread.start();
 		}
@@ -407,9 +451,75 @@ public class Client implements IClientCli, Runnable {
 	// implement them for the first submission. ---
 
 	@Override
+	@Command
 	public String authenticate(String username) throws IOException {
+		createTcpServerSocket();
+
 		// TODO Auto-generated method stub
+		SecureRandom secureRandom = new SecureRandom();
+		final byte[] clientChallenge = new byte[32];
+		secureRandom.nextBytes(clientChallenge);
+
+		byte[] clientChallengeB64 = Base64.encode(clientChallenge);
+
+		String plainTextMessage = String.format("!authenticate %s %s", username, new String(clientChallengeB64));
+
+		File fpubkey = new File("keys/client/chatserver.pub.pem");
+		PublicKey serverPublicKey = Keys.readPublicPEM(fpubkey);
+		PrivateKey clientPrivateKey = Keys.readPrivatePEM(new File(config.getString("keys.dir") + "/" + username + ".pem"));
+
+		try {
+			// Initialize the ciphers for the first 2 messages (!authenticate and !ok)
+			outputCipher = Cipher.getInstance("RSA/NONE/OAEPWithSHA256AndMGF1Padding");
+			outputCipher.init(Cipher.ENCRYPT_MODE, serverPublicKey);
+
+			inputCipher = Cipher.getInstance("RSA/NONE/OAEPWithSHA256AndMGF1Padding");
+			inputCipher.init(Cipher.DECRYPT_MODE, clientPrivateKey);
+
+			write(plainTextMessage);
+
+			// Wait for the server to respond
+			String serverResponse = waitForResponse(commandResponseQueue);
+
+			System.out.println("Got Response From Server: [" + serverResponse + "]");
+
+			String[] response = serverResponse.split(" ");
+			if(response.length != 4) {
+				throw new RuntimeException("WRONG COUNT OF !ok PARAMS");
+			}
+
+			byte[] retClientChallenge = Base64.decode(response[0].getBytes());
+			byte[] serverChallenge = Base64.decode(response[1].getBytes());
+			byte[] secretKeyBytes = Base64.decode(response[2].getBytes());
+			byte[] ivParameter = Base64.decode(response[3].getBytes());
+
+			if(!Arrays.equals(retClientChallenge, clientChallenge)) {
+				throw new RuntimeException("RETURNED CLIENT CHALLENGE DOES NOT MATCH");
+			}
+
+
+			// Intialize the ciphers for all other messages
+			IvParameterSpec params = new IvParameterSpec(ivParameter);
+			SecretKey secretKey = new SecretKeySpec(secretKeyBytes, 0, secretKeyBytes.length, "AES");
+
+			outputCipher = Cipher.getInstance("AES/CTR/NoPadding");
+			outputCipher.init(Cipher.ENCRYPT_MODE, secretKey,params);
+
+			inputCipher = Cipher.getInstance("AES/CTR/NoPadding");
+			inputCipher.init(Cipher.DECRYPT_MODE, secretKey,params);
+
+			System.out.println("Sending the server the challenge");
+			write(Base64.encode(serverChallenge));
+		} catch (NoSuchAlgorithmException e) {
+			e.printStackTrace();
+		} catch (NoSuchPaddingException e) {
+			e.printStackTrace();
+		} catch (InvalidKeyException e) {
+			e.printStackTrace();
+		} catch (InvalidAlgorithmParameterException e) {
+			e.printStackTrace();
+		}
+
 		return null;
 	}
-
 }

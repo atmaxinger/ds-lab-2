@@ -1,7 +1,5 @@
 package chatserver;
 
-import java.io.IOException;
-import java.io.PrintWriter;
 import java.net.Socket;
 
 import entity.User;
@@ -25,35 +23,21 @@ public class CommandHandler {
 		this.chatserver = chatserver;
 	}
 
-	public String login(String username, String password, Socket socket){
-		
+	public boolean login(String username, Socket socket){
 		for(User u:chatserver.getUserList())
 		{
 			synchronized(u){	// for example necessary if two users log in simultaneously with the same username
 				if(u.getUsername().equals(username))
 				{
-					/* check if user already exists */
-					if(u.isActive()){
-						return addCommandResponsePrefix(ALREADY_LOGGED_IN);
-					}
-					else
-					{
-						/* check if password is correct */
-						if(u.getPassword().equals(password))
-						{
-							u.setActive(true);
-							u.setSocket(socket);
-							return addCommandResponsePrefix(SUCESSFULLY_LOGGED_IN);
-						}else
-						{
-							return addCommandResponsePrefix(WRONG_USERNAME_OR_PASSWORD);
-						}
-					}
+					u.setActive(true);
+					u.setSocket(socket);
+
+					return true;
 				}
 			}
 		}
-		
-		return addCommandResponsePrefix(WRONG_USERNAME_OR_PASSWORD);
+
+		return false;
 	}
 	
 	public User getUser(String username)
@@ -87,16 +71,7 @@ public class CommandHandler {
 				/* check if user is active and user is not sending user */
 				if(u.isActive() && !user.equals(u))
 				{
-					PrintWriter writerForUser;
-					try {
-						writerForUser = new PrintWriter(u.getSocket().getOutputStream(), true);
-						synchronized (u.getSocket()) {	
-							writerForUser.format("%s%s: %s%n",PUBLIC_MESSAGE_PREFIX, user.getUsername(), message);
-						}
-						/* do not close stream at this point otherwise further communication will fail */
-					} catch (IOException e) {
-						e.printStackTrace();
-					}
+					u.getHandlerThread().write(String.format("%s%s: %s%n",PUBLIC_MESSAGE_PREFIX, user.getUsername(), message));
 				}
 			}
 		}

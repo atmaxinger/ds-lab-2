@@ -4,10 +4,14 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import chatserver.Chatserver;
+
+import javax.crypto.NoSuchPaddingException;
 
 public class TCPListenerThread implements Runnable {
 
@@ -40,6 +44,12 @@ public class TCPListenerThread implements Runnable {
 			}
 			catch (IOException e) {
 				pool.shutdown();	
+				e.printStackTrace();
+			} catch (NoSuchPaddingException e) {
+				e.printStackTrace();
+			} catch (NoSuchAlgorithmException e) {
+				e.printStackTrace();
+			} catch (InvalidKeyException e) {
 				e.printStackTrace();
 			}
 		}

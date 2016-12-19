@@ -1,5 +1,7 @@
 package entity;
 
+import chatserver.tcp.TCPHandlerThread;
+
 import java.net.Socket;
 
 public class User {
@@ -11,7 +13,8 @@ public class User {
 	private boolean registered;
 	private String ip;
 	private int port;
-	
+	private TCPHandlerThread handlerThread;
+
 	public String getUsername() {
 		return username;
 	}
@@ -66,5 +69,13 @@ public class User {
 
 	public void setPort(int port) {
 		this.port = port;
+	}
+
+	public TCPHandlerThread getHandlerThread() {
+		return handlerThread;
+	}
+
+	public void setHandlerThread(TCPHandlerThread handlerThread) {
+		this.handlerThread = handlerThread;
 	}
 }
