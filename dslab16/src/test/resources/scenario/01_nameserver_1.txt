@@ -1,0 +1,19 @@
+*   Nameserver  ns-root
+*   Nameserver  ns-at
+*   Nameserver  ns-vienna
+*	Chatserver	chatserver
+*	Client		alice.vienna.at
+
+ns-root:            !nameservers
+>					verify("1. at")
+
+ns-at:              !nameservers
+>					verify("1. vienna")
+
+alice.vienna.at:	!authenticate alice.vienna.at
+>					verify("Successfully logged in.")
+
+
+ns-at:  			!exit
+ns-vienna:			!exit
+ns-root:			!exit

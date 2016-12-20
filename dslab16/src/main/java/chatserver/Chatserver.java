@@ -7,6 +7,12 @@ import java.io.PrintStream;
 import java.net.DatagramSocket;
 import java.net.ServerSocket;
 import java.net.SocketException;
+import java.rmi.NoSuchObjectException;
+import java.rmi.NotBoundException;
+import java.rmi.RemoteException;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
+import java.rmi.server.UnicastRemoteObject;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.util.ArrayList;
@@ -20,6 +26,10 @@ import chatserver.udp.UDPListenerThread;
 import cli.Command;
 import cli.Shell;
 import entity.User;
+import nameserver.INameserver;
+import nameserver.INameserverForChatserver;
+import nameserver.exceptions.AlreadyRegisteredException;
+import nameserver.exceptions.InvalidDomainException;
 import util.Config;
 import util.Keys;
 
@@ -37,6 +47,7 @@ public class Chatserver implements IChatserverCli, Runnable {
 	private Thread tcpListenerThread;
 	private Thread shellThread;
 	private List<User> userList;
+	private INameserverForChatserver rootNameserver;
 
 	private PrivateKey serverPrivateKey;
 
@@ -88,8 +99,7 @@ public class Chatserver implements IChatserverCli, Runnable {
 
 	@Override
 	public void run() {
-		// TODO
-		
+
 		shellThread = new Thread(shell);
 		shellThread.start();
 		
@@ -126,6 +136,25 @@ public class Chatserver implements IChatserverCli, Runnable {
 			} catch (IOException e1) {
 				e1.printStackTrace();
 			}
+		}
+
+
+		try {
+			// obtain registry that was created by the root-nameserver
+			Registry registry = LocateRegistry.getRegistry(
+					config.getString("registry.host"),
+					config.getInt("registry.port"));
+
+			// look for the bound server remote-object implementing the INameserverForChatserver interface
+			rootNameserver = (INameserverForChatserver) registry.lookup(config
+					.getString("root_id"));
+
+		} catch (RemoteException e) {
+			throw new RuntimeException(
+					"Error while obtaining registry/server-remote-object.", e);
+		} catch (NotBoundException e) {
+			throw new RuntimeException(
+					"Error while looking for server-remote-object.", e);
 		}
 	}
 
@@ -189,7 +218,7 @@ public class Chatserver implements IChatserverCli, Runnable {
 			userRequestStream.close();
 			userResponseStream.close();
 		}
-	
+
 		return null;
 	}
 	
@@ -222,6 +251,10 @@ public class Chatserver implements IChatserverCli, Runnable {
 	public List<User> getUserList()
 	{
 		return userList;
+	}
+
+	public INameserverForChatserver getRootNameserver() {
+		return rootNameserver;
 	}
 
 	/**

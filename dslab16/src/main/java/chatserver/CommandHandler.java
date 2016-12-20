@@ -1,8 +1,12 @@
 package chatserver;
 
 import java.net.Socket;
+import java.rmi.RemoteException;
 
 import entity.User;
+import nameserver.INameserverForChatserver;
+import nameserver.exceptions.AlreadyRegisteredException;
+import nameserver.exceptions.InvalidDomainException;
 
 public class CommandHandler {
 
@@ -78,26 +82,44 @@ public class CommandHandler {
 	}
 	
 	public String lookup(String username){
+		
+		String usernameParts[] = username.split("\\.");
+		INameserverForChatserver nameserverForChatserver = chatserver.getRootNameserver();
 
-		for(User u:chatserver.getUserList())
+		for (int i = usernameParts.length-1; i > 0 ; i--)
 		{
-			synchronized (u) {
-				if(u.isRegistered() && u.getUsername().equals(username))
+			try {
+				nameserverForChatserver = nameserverForChatserver.getNameserver(usernameParts[i]);
+				if(nameserverForChatserver == null)
 				{
-					return addCommandResponsePrefix(String.format("%s:%d%n",u.getIp(), u.getPort()));
+					return addCommandResponsePrefix(String.format("Zone %s doesn't exist.",usernameParts[i]));
 				}
+			} catch (RemoteException e) {
+				e.printStackTrace();
 			}
 		}
-		
-		return addCommandResponsePrefix(WRONG_USER_OR_NOT_REGISTERED);
+
+		String address = null;
+
+		try {
+			address = nameserverForChatserver.lookup(usernameParts[0]);
+		} catch (RemoteException e) {
+			e.printStackTrace();
+		}
+
+		if(address == null){
+			return addCommandResponsePrefix(WRONG_USER_OR_NOT_REGISTERED);
+		}
+
+		return addCommandResponsePrefix(address);
 	}
 	
 	public String register(User user, String address, int port){
-		
-		synchronized (user) {
-			user.setRegistered(true);
-			user.setIp(address);
-			user.setPort(port);
+
+		try {
+			chatserver.getRootNameserver().registerUser(user.getUsername(),address+":"+port);
+		} catch (RemoteException | AlreadyRegisteredException | InvalidDomainException e) {
+			return addCommandResponsePrefix(e.getMessage());
 		}
 		
 		return addCommandResponsePrefix(String.format("%s %s.%n",SUCCESSFULLY_REGISTERED_ADDRESS, user.getUsername()));
