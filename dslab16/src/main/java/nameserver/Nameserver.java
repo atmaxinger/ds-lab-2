@@ -123,6 +123,7 @@ public class Nameserver implements INameserverCli, Runnable {
 
         for (String domain : domains) {
             result += String.format("%d. %s%n", i, domain);
+            i++;
         }
 
         return result;
@@ -148,6 +149,7 @@ public class Nameserver implements INameserverCli, Runnable {
 
         for (User user : userList) {
             result += String.format("%d. %s %s:%d%n", i, user.getUsername(), user.getIp(),user.getPort());
+            i++;
         }
 
         return result;

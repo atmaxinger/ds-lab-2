@@ -1,19 +1,59 @@
 *   Nameserver  ns-root
 *   Nameserver  ns-at
-*   Nameserver  ns-vienna
+*   Nameserver  ns-de
+*   Nameserver  ns-vienna-at
 *	Chatserver	chatserver
 *	Client		alice.vienna.at
+*	Client		bill.de
 
 ns-root:            !nameservers
->					verify("1. at")
+>					verify(".*at.*de.*", T(test.util.Flag).REGEX)
 
 ns-at:              !nameservers
 >					verify("1. vienna")
 
 alice.vienna.at:	!authenticate alice.vienna.at
->					verify("Successfully logged in.")
+bill.de:	        !authenticate bill.de
 
+alice.vienna.at:	!register 127.0.0.1:9999
+>					verify("Successfully registered address for alice.vienna.at.")
+
+ns-vienna-at:       !addresses
+>					verify("1. alice 127.0.0.1:9999")
+
+alice.vienna.at:    !lookup bill.de
+>                   verify("Wrong username or user not registered.")
+
+alice.vienna.at:	!msg bill.de hallo bill my name is allice
+>					verify("Wrong username or user not reachable.")
+
+bill.de:        	!register 127.0.0.1:8888
+>					verify("Successfully registered address for bill.de.")
+
+alice.vienna.at:    !lookup bill.at
+>                   verify("Wrong username or user not registered.")
+
+alice.vienna.at:    !lookup bill.no.at
+>                   verify("zone no doesn't exist.")
+
+alice.vienna.at:	!msg bill.no.de hallo bill my name is allice
+>					verify("Wrong username or user not reachable.")
+
+alice.vienna.at:    !lookup bill.de
+>                   verify("127.0.0.1:8888")
+
+ns-de:              !addresses
+>					verify("1. bill 127.0.0.1:8888")
+
+bill.de:			!msg alice.vienna.at hallo alice my name is bill
+>					verify("alice.vienna.at replied with !ack.")
+
+alice.vienna.at:	!msg bill.de hallo bill my name is allice
+>					verify("bill.de replied with !ack.")
+
+alice.vienna.at:	!lookup tobiasdf.de
+>					verify("Wrong username or user not registered.")
 
 ns-at:  			!exit
-ns-vienna:			!exit
+ns-vienna-at:		!exit
 ns-root:			!exit
