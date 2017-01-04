@@ -15,8 +15,14 @@ ns-at:              !nameservers
 alice.vienna.at:	!authenticate alice.vienna.at
 bill.de:	        !authenticate bill.de
 
+alice.vienna.at:	!register 127.0.0.1:1
+>					verify("Could not open socket!")
+
 alice.vienna.at:	!register 127.0.0.1:9999
 >					verify("Successfully registered address for alice.vienna.at.")
+
+alice.vienna.at:	!register 127.0.0.1:9999
+>					verify("User is already registered!")
 
 ns-vienna-at:       !addresses
 >					verify("1. alice 127.0.0.1:9999")
@@ -54,6 +60,12 @@ alice.vienna.at:	!msg bill.de hallo bill my name is allice
 alice.vienna.at:	!lookup tobiasdf.de
 >					verify("Wrong username or user not registered.")
 
+ns-root:			!exit
+chatserver          !exit
+alice.vienna.at     !exit
+bill.de             !exit
+
+ns-de               !exit
 ns-at:  			!exit
 ns-vienna-at:		!exit
-ns-root:			!exit
+

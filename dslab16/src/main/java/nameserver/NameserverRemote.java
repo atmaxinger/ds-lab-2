@@ -8,15 +8,13 @@ import nameserver.exceptions.InvalidDomainException;
 import java.io.IOException;
 import java.io.Serializable;
 import java.rmi.RemoteException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 public class NameserverRemote implements INameserver, Serializable {
 
     private Shell shell;
     private HashMap<String, INameserver> nameserverHashMap;
+    private HashMap<String, INameserverForChatserver> nameserverForChatserverHashMap;
     private List<User> userList;
 
     private final String WRONG_USER_OR_NOT_REGISTERED = "Wrong username or user not registered.";
@@ -25,6 +23,7 @@ public class NameserverRemote implements INameserver, Serializable {
     public NameserverRemote(Shell shell) {
         this.shell = shell;
         nameserverHashMap = new HashMap<>();
+        nameserverForChatserverHashMap = new HashMap<>();
         userList = new ArrayList<>();
     }
 
@@ -42,6 +41,10 @@ public class NameserverRemote implements INameserver, Serializable {
                 }
 
                 nameserverHashMap.put(domain, nameserver);
+            }
+
+            synchronized (nameserverForChatserverHashMap){
+                nameserverForChatserverHashMap.put(domain, nameserverForChatserver);
             }
 
             try {
@@ -69,6 +72,14 @@ public class NameserverRemote implements INameserver, Serializable {
 
         if (usernameParts.length == 1) {
 
+            synchronized (userList) {
+                for (User u : userList) {
+                    if (u.getUsername().equals(username)) {
+                        throw new AlreadyRegisteredException(String.format("User %s is already registered.", username));
+                    }
+                }
+            }
+
             User user = new User();
             user.setUsername(username);
 
@@ -76,7 +87,9 @@ public class NameserverRemote implements INameserver, Serializable {
             user.setIp(addressParts[0]);
             user.setPort(Integer.parseInt(addressParts[1]));
 
-            userList.add(user);
+            synchronized (userList) {
+                userList.add(user);
+            }
 
             try {
                 shell.writeLine(String.format("Registering user ’%s’%n", username));
@@ -102,8 +115,9 @@ public class NameserverRemote implements INameserver, Serializable {
             e.printStackTrace();
         }
 
-        return getNameserverFromHashMap(zone);
-
+        synchronized (nameserverForChatserverHashMap){
+            return nameserverForChatserverHashMap.get(zone);
+        }
     }
 
     @Override
@@ -115,9 +129,11 @@ public class NameserverRemote implements INameserver, Serializable {
             e.printStackTrace();
         }
 
-        for (User user : userList) {
-            if (user.getUsername().equals(username)) {
-                return String.format("%s:%s", user.getIp(), user.getPort());
+        synchronized (userList) {
+            for (User user : userList) {
+                if (user.getUsername().equals(username)) {
+                    return String.format("%s:%s", user.getIp(), user.getPort());
+                }
             }
         }
 
@@ -141,29 +157,68 @@ public class NameserverRemote implements INameserver, Serializable {
 
         String parentDomain = domainParts[domainParts.length - 1];
 
-        INameserver parentNameserver = getNameserverFromHashMap(parentDomain);
+        INameserver parentNameserver;
+
+        synchronized (nameserverHashMap) {
+            parentNameserver = nameserverHashMap.get(parentDomain);
+        }
 
         if (parentNameserver == null) {
-            throw new InvalidDomainException(String.format("no nameserver for %s", parentNameserver));
+            throw new InvalidDomainException(String.format("no nameserver for %s", parentDomain));
         }
         return parentNameserver;
     }
 
-    public Set<String> getDomains() {
+    public String getDomainPrintList() {
+        String result = "";
+
+        List<String> domains = new ArrayList<>();
+
         synchronized (nameserverHashMap) {
-            return nameserverHashMap.keySet();
+
+            domains.addAll(nameserverHashMap.keySet());
+
+            /* sort list alphabetically */
+            Collections.sort(domains, new Comparator<String>() {
+                @Override
+                public int compare(String d1, String d2) {
+                    return d1.compareToIgnoreCase(d2);	// compare strings
+                }
+            });
+
+            int i = 1;
+
+            for (String domain : domains) {
+                result += String.format("%d. %s%n", i, domain);
+                i++;
+            }
         }
+
+        return result;
     }
 
-    public List<User> getUserList() {
-        return userList;
-    }
+    public String getUserPrintList() {
 
-    private INameserver getNameserverFromHashMap(String key)
-    {
-        synchronized (nameserverHashMap)
-        {
-            return nameserverHashMap.get(key);
+        String result = "";
+
+        synchronized (userList) {
+
+		    /* sort user list alphabetically */
+            Collections.sort(userList, new Comparator<User>() {
+                @Override
+                public int compare(User u1, User u2) {
+                    return u1.getUsername().compareToIgnoreCase(u2.getUsername());    // compare strings
+                }
+            });
+
+            int i = 1;
+
+            for (User user : userList) {
+                result += String.format("%d. %s %s:%d%n", i, user.getUsername(), user.getIp(), user.getPort());
+                i++;
+            }
         }
+
+        return result;
     }
 }

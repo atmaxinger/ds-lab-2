@@ -54,6 +54,8 @@ public class Client implements IClientCli, Runnable {
 	private final String SUCESSFULLY_LOGGED_IN = "Successfully logged in.";
 	private final String ALREADY_LOGGED_IN = "Already logged in.";
 	private final String COULD_NOT_OPEN_SOCKET = "Could not open socket!";
+	private final String SUCCESSFULLY_REGISTERED_ADDRESS = "Successfully registered address for";
+	private final String USER_ALREADY_REGISTERED = "User is already registered!";
 
 	private Cipher inputCipher;
 	private Cipher outputCipher;
@@ -263,6 +265,11 @@ public class Client implements IClientCli, Runnable {
 	@Override
 	@Command
 	public String register(String privateAddress) throws IOException {
+
+		if(privateTcpServerSocket != null)
+		{
+			return USER_ALREADY_REGISTERED;
+		}
 		
 		if(!isLoggedIn())
 		{
@@ -289,31 +296,26 @@ public class Client implements IClientCli, Runnable {
 		{
 			return PORT_NOT_A_NUMBER;
 		}
-		
-		try{
-			ServerSocket newPrivateTcpServerSocket = new ServerSocket(port); // try to open new server socket
-			
-			// if successful then
-			
-			/* if user has already registered a address then close old public listener */
-			if(privateTcpServerSocket != null)
-			{
-				privateTcpServerSocket.close();
+
+		String response = null;
+
+		try {
+			privateTcpServerSocket = new ServerSocket(port); // try to open new server socket if it is not working privateTcpServerSocket will be null
+
+			write(String.format("!register %s%n",privateAddress));
+
+			response = waitForResponse(commandResponseQueue);
+
+			if(response.startsWith(SUCCESSFULLY_REGISTERED_ADDRESS)) {
+				/* start listener for private messages */
+				PrivateTcpListnerThread privateTcpListner = new PrivateTcpListnerThread(privateTcpServerSocket, shell);
+				Thread privateListenerThread = new Thread(privateTcpListner);
+				privateListenerThread.start();
 			}
-			privateTcpServerSocket = newPrivateTcpServerSocket;
-		}
-		catch(SocketException e){
+
+		} catch (SocketException e) {
 			return COULD_NOT_OPEN_SOCKET;
 		}
-		
-		write(String.format("!register %s%n",privateAddress));
-		
-		String response = waitForResponse(commandResponseQueue);
-	
-		/* start listener for private messages */
-		PrivateTcpListnerThread privateTcpListner = new PrivateTcpListnerThread(privateTcpServerSocket,shell);
-		Thread privateListenerThread = new Thread(privateTcpListner);
-		privateListenerThread.start();
 		
 		return response;
 	}

@@ -107,10 +107,6 @@ public class CommandHandler {
 			e.printStackTrace();
 		}
 
-		if(address == null){
-			return addCommandResponsePrefix(WRONG_USER_OR_NOT_REGISTERED);
-		}
-
 		return addCommandResponsePrefix(address);
 	}
 	
