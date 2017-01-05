@@ -46,10 +46,8 @@ public class PrivateTcpListenerThread implements Runnable{
 
 						if (IntegrityValidator.isMessageUntampered(segments[0], segments[1])) {
 							writer.println(IntegrityValidator.generateHMAC("!ack") + " !ack");
-							System.out.println(IntegrityValidator.generateHMAC("!ack") + " !ack");
 						} else {
 							writer.println(IntegrityValidator.generateHMAC("!tampered " + segments[1]) + " !tampered " + segments[1]);
-							System.out.println(IntegrityValidator.generateHMAC("!tampered " + segments[1]) + " !tampered " + segments[1]);
 						}
 					} catch (Exception e) {
 						e.printStackTrace();

@@ -316,7 +316,7 @@ public class Client implements IClientCli, Runnable {
 
 			if(response.startsWith(SUCCESSFULLY_REGISTERED_ADDRESS)) {
 				/* start listener for private messages */
-				PrivateTcpListnerThread privateTcpListner = new PrivateTcpListnerThread(privateTcpServerSocket, shell);
+				PrivateTcpListenerThread privateTcpListner = new PrivateTcpListenerThread(privateTcpServerSocket, shell);
 				Thread privateListenerThread = new Thread(privateTcpListner);
 				privateListenerThread.start();
 			}
@@ -327,7 +327,7 @@ public class Client implements IClientCli, Runnable {
 
 		write(String.format("!register %s%n",privateAddress));
 		
-		String response = waitForResponse(commandResponseQueue);
+		response = waitForResponse(commandResponseQueue);
 	
 		/* start listener for private messages */
 		PrivateTcpListenerThread privateTcpListner = new PrivateTcpListenerThread(privateTcpServerSocket,shell);
