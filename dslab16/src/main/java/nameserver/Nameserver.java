@@ -50,10 +50,19 @@ public class Nameserver implements INameserverCli, Runnable {
 
     @Override
     public void run() {
-
         new Thread(shell).start();
 
         nameserverRemote = new NameserverRemote(shell);
+
+        // create stub (proxy for the actual object)
+        INameserver stub = null;
+
+        try {
+            stub = (INameserver) UnicastRemoteObject
+                    .exportObject(nameserverRemote, 0);
+        } catch (RemoteException e) {
+            e.printStackTrace();
+        }
 
         if (!config.listKeys().contains("domain")) {
             /* root nameserver */
@@ -62,17 +71,13 @@ public class Nameserver implements INameserverCli, Runnable {
                 registry = LocateRegistry.createRegistry(config
                         .getInt("registry.port"));
 
-                INameserver rootNameserver = (INameserver) UnicastRemoteObject
-                        .exportObject(nameserverRemote, 0);
-
-                // bind rootNameserver object on specified binding name in the registry
-                registry.bind(config.getString("root_id"), rootNameserver);
+                // bind stub object on specified binding name in the registry
+                registry.bind(config.getString("root_id"), stub);
 
             } catch (RemoteException e) {
-                throw new RuntimeException("Error while starting server.", e);
+                exit("Error while starting server.", e);
             } catch (AlreadyBoundException e) {
-                throw new RuntimeException(
-                        "Error while binding remote object to registry.", e);
+                exit("Error while binding remote object to registry.", e);
             }
 
         } else {
@@ -87,17 +92,12 @@ public class Nameserver implements INameserverCli, Runnable {
                 INameserver rootNameserver = (INameserver) registry.lookup(config
                         .getString("root_id"));
 
-
-                INameserver stub = ((INameserver) UnicastRemoteObject.exportObject(nameserverRemote, 0));
-
                 rootNameserver.registerNameserver(config.getString("domain"), stub, stub);
 
             } catch (RemoteException e) {
-                throw new RuntimeException(
-                        "Error while obtaining registry/server-remote-object.", e);
+                exit("Error while obtaining registry/server-remote-object.", e);
             } catch (NotBoundException e) {
-                throw new RuntimeException(
-                        "Error while looking for server-remote-object.", e);
+                exit("Error while looking for server-remote-object.", e);
             } catch (InvalidDomainException | AlreadyRegisteredException e) {
                 try {
                     shell.writeLine(e.getMessage());
@@ -113,46 +113,24 @@ public class Nameserver implements INameserverCli, Runnable {
     @Command
     public String nameservers() throws IOException {
 
-        String result = "";
-
-        String[] domains = nameserverRemote.getDomains().toArray(new String[nameserverRemote.getDomains().size()]);
-
-        Arrays.sort(domains);    // sort domains in alphabetical order
-
-        int i = 1;
-
-        for (String domain : domains) {
-            result += String.format("%d. %s%n", i, domain);
-            i++;
-        }
-
-        return result;
+        return nameserverRemote.getDomainPrintList();
     }
 
     @Override
     @Command
     public String addresses() throws IOException {
 
-        String result = "";
+       return nameserverRemote.getUserPrintList();
+    }
 
-        List<User> userList = nameserverRemote.getUserList();
-
-		/* sort user list alphabetically */
-        Collections.sort(userList, new Comparator<User>() {
-            @Override
-            public int compare(User u1, User u2) {
-                return u1.getUsername().compareToIgnoreCase(u2.getUsername());    // compare strings
-            }
-        });
-
-        int i = 1;
-
-        for (User user : userList) {
-            result += String.format("%d. %s %s:%d%n", i, user.getUsername(), user.getIp(),user.getPort());
-            i++;
+    private void exit(String message, Exception e)
+    {
+        try {
+            shell.writeLine(String.format("%s%n%s",message,e.getMessage()));
+            exit();
+        } catch (IOException e1) {
+            e1.printStackTrace();
         }
-
-        return result;
     }
 
     @Override
@@ -167,12 +145,19 @@ public class Nameserver implements INameserverCli, Runnable {
         }
 
         /* unbind the remote object so that a client can't find it anymore */
-        try {
-            if(registry != null) {
+        if(registry != null) {
+            try {
                 registry.unbind(config.getString("root_id"));
+            } catch (NotBoundException e) {
+                e.printStackTrace();
             }
-        } catch (Exception e) {
-            e.printStackTrace();
+
+            /* close registry */
+            try {
+                UnicastRemoteObject.unexportObject(registry,true);
+            } catch (NoSuchObjectException e) {
+                e.printStackTrace();
+            }
         }
 
         /* terminate shell thread */
