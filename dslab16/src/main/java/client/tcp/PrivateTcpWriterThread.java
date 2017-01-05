@@ -1,17 +1,12 @@
 package client.tcp;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.PrintStream;
-import java.io.PrintWriter;
+import java.io.*;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.UnknownHostException;
 
 import cli.Shell;
-import util.Config;
+import util.IntegrityValidator;
 
 public class PrivateTcpWriterThread implements Runnable{
 
@@ -33,7 +28,7 @@ public class PrivateTcpWriterThread implements Runnable{
 	
 	@Override
 	public void run(){
-		
+
 		BufferedReader reader = null;
 		PrintWriter writer = null;
 		
@@ -42,10 +37,24 @@ public class PrivateTcpWriterThread implements Runnable{
 			// create a reader to retrieve !ack send by the the other client
 			reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 			// create a writer to send private messages to the the other client
-			writer= new PrintWriter(socket.getOutputStream(), true);	
-		
-			writer.println(message);
-			shell.writeLine(String.format("%s replied with %s.%n", username, reader.readLine()));
+			writer= new PrintWriter(socket.getOutputStream(), true);
+
+			message = "!msg " + message;
+			try {
+				writer.println(IntegrityValidator.generateHMAC(message) + " " + message);
+
+				String response = reader.readLine();
+				String[] segments = response.split(" ",2);
+
+				if (IntegrityValidator.isMessageUntampered(segments[0], segments[1])) {
+					shell.writeLine(String.format("%s replied with %s.%n", username, segments[1]));
+				} else {
+					shell.writeLine(String.format("%s replied with tampered message %s.%n", username, segments[1]));
+				}
+
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
 		}
 		catch (SocketException e){
 			// thrown if socket is closed

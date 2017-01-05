@@ -15,11 +15,12 @@ import java.util.List;
 
 import cli.Command;
 import cli.Shell;
-import client.tcp.PrivateTcpListnerThread;
+import client.tcp.PrivateTcpListenerThread;
 import client.tcp.PrivateTcpWriterThread;
 import client.tcp.PublicTcpListenerThread;
 import client.udp.PublicUdpListenerThread;
 import util.Config;
+import util.IntegrityValidator;
 import util.Keys;
 
 import javax.crypto.*;
@@ -43,6 +44,7 @@ public class Client implements IClientCli, Runnable {
 	private PrivateTcpWriterThread privateTcpWriter;
 	private List<String> publicMessageQueue;
 	private List<String> commandResponseQueue;
+	private Mac hMac;
 	
 	private final String COULD_NOT_ESTABLISH_CONNECTION = "Could not establish connection.";
 	private final String PRIVATE_ADDRESS_INCORRECT = "PrivateAddress is not correct!";
@@ -120,7 +122,13 @@ public class Client implements IClientCli, Runnable {
 
 	@Override
 	public void run() {
-		
+		try {
+			IntegrityValidator.loadHMACKey(config);
+		} catch (Exception e) {
+			e.printStackTrace();
+			return;
+		}
+
 		new Thread(shell).start();
 	}
 
@@ -311,7 +319,7 @@ public class Client implements IClientCli, Runnable {
 		String response = waitForResponse(commandResponseQueue);
 	
 		/* start listener for private messages */
-		PrivateTcpListnerThread privateTcpListner = new PrivateTcpListnerThread(privateTcpServerSocket,shell);
+		PrivateTcpListenerThread privateTcpListner = new PrivateTcpListenerThread(privateTcpServerSocket,shell);
 		Thread privateListenerThread = new Thread(privateTcpListner);
 		privateListenerThread.start();
 		
@@ -400,7 +408,7 @@ public class Client implements IClientCli, Runnable {
 			e.printStackTrace();
 		}
 	}
-	
+
 	public boolean isLoggedIn()
 	{
 		if(tcpSocket == null)
@@ -518,4 +526,6 @@ public class Client implements IClientCli, Runnable {
 
 		return null;
 	}
+
+
 }
