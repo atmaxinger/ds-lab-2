@@ -52,10 +52,10 @@ ns-de:              !addresses
 >					verify("1. bill 127.0.0.1:8888")
 
 bill.de:			!msg alice.vienna.at hallo alice my name is bill
->					verify("alice.vienna.at replied with !ack.")
+>					verify("alice.vienna.at replied with '!ack'.")
 
 alice.vienna.at:	!msg bill.de hallo bill my name is allice
->					verify("bill.de replied with !ack.")
+>					verify("bill.de replied with '!ack'.")
 
 alice.vienna.at:	!lookup tobiasdf.de
 >					verify("Wrong username or user not registered.")

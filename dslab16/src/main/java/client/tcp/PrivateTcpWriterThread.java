@@ -4,6 +4,8 @@ import java.io.*;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.UnknownHostException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 
 import cli.Shell;
 import util.IntegrityValidator;
@@ -47,12 +49,12 @@ public class PrivateTcpWriterThread implements Runnable{
 				String[] segments = response.split(" ",2);
 
 				if (IntegrityValidator.isMessageUntampered(segments[0], segments[1])) {
-					shell.writeLine(String.format("%s replied with %s.%n", username, segments[1]));
+					shell.writeLine(String.format("%s replied with '%s'.%n", username, segments[1]));
 				} else {
-					shell.writeLine(String.format("%s replied with tampered message %s.%n", username, segments[1]));
+					shell.writeLine(String.format("%s replied with tampered message '%s'.%n", username, segments[1]));
 				}
 
-			} catch (Exception e) {
+			} catch (NoSuchAlgorithmException | InvalidKeyException e) {
 				e.printStackTrace();
 			}
 		}

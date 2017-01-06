@@ -7,6 +7,8 @@ import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 
 import cli.Shell;
 import util.IntegrityValidator;
@@ -49,7 +51,7 @@ public class PrivateTcpListenerThread implements Runnable{
 						} else {
 							writer.println(IntegrityValidator.generateHMAC("!tampered " + segments[1]) + " !tampered " + segments[1]);
 						}
-					} catch (Exception e) {
+					} catch (NoSuchAlgorithmException | InvalidKeyException e) {
 						e.printStackTrace();
 					}
 				}

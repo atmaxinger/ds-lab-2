@@ -44,8 +44,7 @@ public class Client implements IClientCli, Runnable {
 	private PrivateTcpWriterThread privateTcpWriter;
 	private List<String> publicMessageQueue;
 	private List<String> commandResponseQueue;
-	private Mac hMac;
-	
+
 	private final String COULD_NOT_ESTABLISH_CONNECTION = "Could not establish connection.";
 	private final String PRIVATE_ADDRESS_INCORRECT = "PrivateAddress is not correct!";
 	private final String PORT_NOT_A_NUMBER = "Port is not a number!";
@@ -126,7 +125,7 @@ public class Client implements IClientCli, Runnable {
 	public void run() {
 		try {
 			IntegrityValidator.loadHMACKey(config);
-		} catch (Exception e) {
+		} catch (IOException e) {
 			e.printStackTrace();
 			return;
 		}
@@ -305,7 +304,7 @@ public class Client implements IClientCli, Runnable {
 			return PORT_NOT_A_NUMBER;
 		}
 
-		String response = null;
+		String response;
 
 		try {
 			privateTcpServerSocket = new ServerSocket(port); // try to open new server socket if it is not working privateTcpServerSocket will be null
@@ -325,15 +324,6 @@ public class Client implements IClientCli, Runnable {
 			return COULD_NOT_OPEN_SOCKET;
 		}
 
-		write(String.format("!register %s%n",privateAddress));
-		
-		response = waitForResponse(commandResponseQueue);
-	
-		/* start listener for private messages */
-		PrivateTcpListenerThread privateTcpListner = new PrivateTcpListenerThread(privateTcpServerSocket,shell);
-		Thread privateListenerThread = new Thread(privateTcpListner);
-		privateListenerThread.start();
-		
 		return response;
 	}
 	
