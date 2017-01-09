@@ -402,7 +402,6 @@ public class Client implements IClientCli, Runnable {
 			try {
 				shell.writeLine(COULD_NOT_ESTABLISH_CONNECTION);
 			} catch (IOException e1) {
-				// TODO Auto-generated catch block
 				e1.printStackTrace();
 			}
 		} catch (IOException e) {
@@ -448,7 +447,6 @@ public class Client implements IClientCli, Runnable {
 
 		Client client = new Client(args[0], new Config("client"), System.in,
 				System.out);
-		// TODO: start the client
 		new Thread(client).start();
 		
 		/* as the application only uses user-threads, the jvm will wait till all threads are finished =>
@@ -462,9 +460,6 @@ public class Client implements IClientCli, Runnable {
 	@Override
 	@Command
 	public String authenticate(String username) throws IOException {
-		createTcpServerSocket();
-
-		// TODO Auto-generated method stub
 		SecureRandom secureRandom = new SecureRandom();
 		final byte[] clientChallenge = new byte[32];
 		secureRandom.nextBytes(clientChallenge);
@@ -473,17 +468,20 @@ public class Client implements IClientCli, Runnable {
 
 		String plainTextMessage = String.format("!authenticate %s %s", username, new String(clientChallengeB64));
 
-		File fpubkey = new File(config.getString("chatserver.key"));
-		PublicKey serverPublicKey = Keys.readPublicPEM(fpubkey);
-		PrivateKey clientPrivateKey = Keys.readPrivatePEM(new File(config.getString("keys.dir") + "/" + username + ".pem"));
-
 		try {
+			createTcpServerSocket();
+
+			File fpubkey = new File(config.getString("chatserver.key"));
+			PublicKey serverPublicKey = Keys.readPublicPEM(fpubkey);
+			PrivateKey clientPrivateKey = Keys.readPrivatePEM(new File(config.getString("keys.dir") + "/" + username + ".pem"));
+
 			// Initialize the ciphers for the first 2 messages (!authenticate and !ok)
 			outputCipher = Cipher.getInstance("RSA/NONE/OAEPWithSHA256AndMGF1Padding");
 			outputCipher.init(Cipher.ENCRYPT_MODE, serverPublicKey);
 
 			inputCipher = Cipher.getInstance("RSA/NONE/OAEPWithSHA256AndMGF1Padding");
 			inputCipher.init(Cipher.DECRYPT_MODE, clientPrivateKey);
+
 
 			write(plainTextMessage);
 
@@ -492,7 +490,9 @@ public class Client implements IClientCli, Runnable {
 
 			String[] response = serverResponse.split(" ");
 			if(response.length != 4) {
-				throw new RuntimeException("WRONG COUNT OF !ok PARAMS");
+				tcpSocket.close();
+
+				return "WRONG COUNT OF !ok PARAMS";
 			}
 
 			byte[] retClientChallenge = Base64.decode(response[0].getBytes());
@@ -501,10 +501,12 @@ public class Client implements IClientCli, Runnable {
 			byte[] ivParameter = Base64.decode(response[3].getBytes());
 
 			if(!Arrays.equals(retClientChallenge, clientChallenge)) {
-				throw new RuntimeException("RETURNED CLIENT CHALLENGE DOES NOT MATCH");
+				tcpSocket.close();
+
+				return "RETURNED CLIENT CHALLENGE DOES NOT MATCH";
 			}
 
-			// Intialize the ciphers for all other messages
+			// Initialize the ciphers for all other messages
 			IvParameterSpec params = new IvParameterSpec(ivParameter);
 			SecretKey secretKey = new SecretKeySpec(secretKeyBytes, 0, secretKeyBytes.length, "AES");
 
@@ -515,18 +517,16 @@ public class Client implements IClientCli, Runnable {
 			inputCipher.init(Cipher.DECRYPT_MODE, secretKey,params);
 
 			write(Base64.encode(serverChallenge));
-		} catch (NoSuchAlgorithmException e) {
+		} catch (FileNotFoundException e) {
+			tcpSocket.close();
+
+			return "Private Key for User doesn't exist";
+		}
+		catch (NoSuchAlgorithmException | NoSuchPaddingException | InvalidKeyException | InvalidAlgorithmParameterException e) {
 			e.printStackTrace();
-		} catch (NoSuchPaddingException e) {
-			e.printStackTrace();
-		} catch (InvalidKeyException e) {
-			e.printStackTrace();
-		} catch (InvalidAlgorithmParameterException e) {
-			e.printStackTrace();
+			tcpSocket.close();
 		}
 
 		return null;
 	}
-
-
 }

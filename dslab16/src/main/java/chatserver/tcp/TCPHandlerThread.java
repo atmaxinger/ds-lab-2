@@ -9,7 +9,6 @@ import java.net.SocketException;
 import java.security.*;
 import java.util.Arrays;
 
-import org.bouncycastle.jce.provider.symmetric.AES;
 import org.bouncycastle.util.encoders.Base64;
 
 
@@ -97,7 +96,6 @@ public class TCPHandlerThread implements Runnable{
 					if (request.startsWith("!authenticate")) {
 						_username = parts[1];
 						String clientChallengeB64 = parts[2];
-						byte[] clientChallenge = Base64.decode(clientChallengeB64);
 
 						clientPublicKey = chatserver.getPublicKeyForClient(_username);
 						outputCipher.init(Cipher.ENCRYPT_MODE, clientPublicKey);
@@ -135,7 +133,7 @@ public class TCPHandlerThread implements Runnable{
 					// 3. Meldung vom Client
 					else if(!request.startsWith("!")){
 						if(!Arrays.equals(Base64.decode(parts[0]), serverChallenge)) {
-							throw new RuntimeException("CLIENT DIDNT REPLY RIGHT SERVER CHALLENGE");
+							throw new AuthExcetpion("CLIENT DIDNT REPLY RIGHT SERVER CHALLENGE");
 						}
 						else {
 							boolean alreadyLoggedIn = false;

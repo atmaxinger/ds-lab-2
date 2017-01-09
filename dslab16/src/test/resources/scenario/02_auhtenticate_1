@@ -1,0 +1,25 @@
+*   Nameserver  ns-root
+*   Nameserver  ns-at
+*   Nameserver  ns-de
+*   Nameserver  ns-vienna-at
+*	Chatserver	chatserver
+*	Client		alice.vienna.at
+*	Client		bill.de
+
+
+bill.de: !authenticate bill.de
+
+alice.vienna.at: !authenticate gaga
+>				  verify("Private Key for User doesn't exist")
+
+
+
+ns-root:			!exit
+chatserver          !exit
+alice.vienna.at     !exit
+bill.de             !exit
+
+ns-de               !exit
+ns-at:  			!exit
+ns-vienna-at:		!exit
+
