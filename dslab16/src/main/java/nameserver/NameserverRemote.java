@@ -48,7 +48,7 @@ public class NameserverRemote implements INameserver, Serializable {
             }
 
             try {
-                shell.writeLine(String.format("Registering nameserver for zone ’%s’%n", domain));
+                shell.writeLine(String.format("Registering nameserver for zone '%s'%n", domain));
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -92,7 +92,7 @@ public class NameserverRemote implements INameserver, Serializable {
             }
 
             try {
-                shell.writeLine(String.format("Registering user ’%s’%n", username));
+                shell.writeLine(String.format("Registering user '%s'%n", username));
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -110,7 +110,7 @@ public class NameserverRemote implements INameserver, Serializable {
     @Override
     public INameserverForChatserver getNameserver(String zone) throws RemoteException {
         try {
-            shell.writeLine(String.format("Nameserver for ’%s’ requested by chatserver%n", zone));
+            shell.writeLine(String.format("Nameserver for '%s' requested by chatserver%n", zone));
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -124,7 +124,7 @@ public class NameserverRemote implements INameserver, Serializable {
     public String lookup(String username) throws RemoteException {
 
         try {
-            shell.writeLine(String.format("Address for user ’%s’ requested by chatserver%n", username));
+            shell.writeLine(String.format("Address for user '%s' requested by chatserver%n", username));
         } catch (IOException e) {
             e.printStackTrace();
         }
