@@ -10,7 +10,6 @@ import java.security.Key;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
-// TODO: Warum abstract?
 public abstract class IntegrityValidator {
     public static Key secretKey;
 

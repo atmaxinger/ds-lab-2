@@ -150,11 +150,27 @@ public class Chatserver implements IChatserverCli, Runnable {
 					.getString("root_id"));
 
 		} catch (RemoteException e) {
-			throw new RuntimeException(
-					"Error while obtaining registry/server-remote-object.", e);
+			try {
+				shell.writeLine("Error while obtaining registry/server-remote-object.");
+			} catch (IOException e1) {
+				e1.printStackTrace();
+			}
+			try {
+				exit();
+			} catch (IOException e1) {
+				e1.printStackTrace();
+			}
 		} catch (NotBoundException e) {
-			throw new RuntimeException(
-					"Error while looking for server-remote-object.", e);
+			try {
+				shell.writeLine("Error while looking for server-remote-object.");
+			} catch (IOException e1) {
+				e1.printStackTrace();
+			}
+			try {
+				exit();
+			} catch (IOException e1) {
+				e1.printStackTrace();
+			}
 		}
 	}
 

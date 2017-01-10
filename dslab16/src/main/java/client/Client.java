@@ -460,6 +460,10 @@ public class Client implements IClientCli, Runnable {
 	@Override
 	@Command
 	public String authenticate(String username) throws IOException {
+		if(isLoggedIn()) {
+			return ALREADY_LOGGED_IN;
+		}
+
 		SecureRandom secureRandom = new SecureRandom();
 		final byte[] clientChallenge = new byte[32];
 		secureRandom.nextBytes(clientChallenge);
